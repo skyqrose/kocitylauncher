@@ -502,13 +502,20 @@ function createWindow () {
 
       console.log(arg)
 
+      const exePath = `${arg.path}/${arg.version == 1 ? 'highRes' : 'lowRes'}/KnockoutCity/Knockout City.exe`;
       const args = [`-lang=${arg.language || 'en'}`, `-username=${arg.authkey ? arg.authkey : arg.username}`, `-backend=${arg.server}`];
-      const game = spawn(`${arg.path}/${arg.version == 1 ? 'highRes' : 'lowRes'}/KnockoutCity/KnockoutCity.exe`, args, { 
+      const spawnOptions = {
         cwd: `${arg.path}/${arg.version == 1 ? 'highRes' : 'lowRes'}/KnockoutCity`,
         detached: true,
         stdio: 'ignore',
         env: {}
-      })
+      }
+      let game;
+      if (process.platform === "linux") {
+        game = spawn("wine", [exePath, ...args], spawnOptions)
+      } else {
+        game = spawn(exePath, args, spawnOptions)
+      }
       console.log(game.spawnargs)
       event.returnValue = "launched"
       game.on('error', (err) => {
@@ -678,6 +685,14 @@ if(gotTheLock) {
       console.log(`${version} => ${res.data}`)
       if(`${res.data}`.trim() == `${version}`.trim()) {
         createWindow()
+      } else if (process.platform === "linux") {
+        await dialog.showMessageBox({
+          type: "info",
+          title: "Update Available",
+          message: "An update is available for the Knockout City Launcher! You can download it from https://github.com/Ipmake/kocitylauncher/releases/latest .",
+          buttons: ["Ok"]
+        })
+        createWindow();
       } else {
         const { response } = await dialog.showMessageBox({
           type: "info",
